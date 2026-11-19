@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تجربة الإشعاع الحراري</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Tajawal', sans-serif; background-color: #f3f4f6; }
+        .timer-glow { transition: all 0.2s; }
+        .timer-active { color: #ef4444; text-shadow: 0 0 15px rgba(239, 68, 68, 0.4); transform: scale(1.05); }
+        .highlight-row { background-color: #dbeafe !important; transition: background-color 0.5s; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-6xl w-full bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
+        
+        <!-- الشريط الجانبي (المتطلبات والسلامة) -->
+        <div class="w-full md:w-1/4 bg-slate-800 text-white p-6 flex flex-col gap-6">
+            <div>
+                <h2 class="text-xl font-bold mb-4 flex items-center gap-2 border-b border-slate-600 pb-2">
+                    <span class="text-2xl">📋</span> ستحتاج إلى:
+                </h2>
+                <ul class="space-y-3 text-slate-300">
+                    <li class="flex items-start gap-2">
+                        <span class="text-blue-400 mt-1">■</span> ثلاث علب: فضية، وبيضاء، وسوداء، مع غطاء.
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-blue-400 mt-1">■</span> ماء مغلي.
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-blue-400 mt-1">■</span> ثلاثة مقاييس حرارة.
+                    </li>
+                </ul>
+            </div>
+
+            <div>
+                <h2 class="text-xl font-bold mb-4 flex items-center gap-2 border-b border-slate-600 pb-2">
+                    <span class="text-2xl">🥽</span> إرشادات السلامة:
+                </h2>
+                <ul class="space-y-3 text-slate-300 text-sm leading-relaxed">
+                    <li>• كن حذرًا عند استخدام الماء الساخن.</li>
+                    <li>• سيقوم مُعلمك بملء الوعاء به. لا تحرّك الوعاء إطلاقًا خلال تنفيذ التجربة.</li>
+                    <li>• عند الانتهاء دع الوعاء ليبرد الماء فيه قبل وضعه جانبًا.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- المنطقة الرئيسية للمحاكاة -->
+        <div class="w-full md:w-3/4 p-6 md:p-8 flex flex-col gap-6">
+            
+            <!-- العنوان والمؤقت -->
+            <div class="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm">
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold text-slate-800">النشاط 1: ما نوع السطح الذي يشع أشعة تحت حمراء أكثر؟</h1>
+                    <p class="text-slate-500 mt-2">راقب انخفاض درجات الحرارة دقيقة بدقيقة (كل دقيقة تستغرق 4 ثوانٍ).</p>
+                </div>
+                
+                <div class="flex flex-col items-center justify-center bg-white border-2 border-slate-200 rounded-xl p-4 min-w-[150px]">
+                    <div id="timerDisplay" class="text-4xl font-extrabold text-slate-700 timer-glow font-mono">
+                        00:00
+                    </div>
+                    <span class="text-xs text-slate-400 font-bold mt-1">المؤقت الزمني</span>
+                </div>
+            </div>
+
+            <!-- أزرار التحكم -->
+            <div class="flex gap-4">
+                <button id="simBtn" onclick="simulateNextMinute()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition duration-200 shadow-lg shadow-blue-200 text-lg flex justify-center items-center gap-2">
+                    <span>▶️</span> <span id="simBtnText">بدء محاكاة الدقيقة 1</span>
+                </button>
+                <button onclick="resetSimulation()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-6 rounded-xl transition duration-200">
+                    إعادة ضبط
+                </button>
+            </div>
+
+            <!-- الجدول والرسم البياني -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-2">
+                <!-- الجدول -->
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm h-[400px] overflow-y-auto">
+                    <table class="w-full text-center text-sm">
+                        <thead class="bg-slate-100 text-slate-700 sticky top-0">
+                            <tr>
+                                <th class="p-3 font-bold border-b border-slate-200">الزمن (دقائق)</th>
+                                <th class="p-3 font-bold border-b border-slate-200 text-gray-900">العلبة السوداء (°C)</th>
+                                <th class="p-3 font-bold border-b border-slate-200 text-gray-500">العلبة البيضاء (°C)</th>
+                                <th class="p-3 font-bold border-b border-slate-200 text-blue-500">العلبة الفضية (°C)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody" class="divide-y divide-slate-100">
+                            <!-- سيتم ملء البيانات هنا -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- الرسم البياني -->
+                <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm h-[400px] flex items-center justify-center">
+                    <canvas id="coolingChart" class="w-full h-full"></canvas>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <script>
+        // البيانات الافتراضية المدروسة للتجربة (تبريد نيوتن)
+        const experimentData = [
+            { min: 0, black: 90.0, white: 90.0, metal: 90.0 },
+            { min: 1, black: 82.5, white: 85.2, metal: 88.1 },
+            { min: 2, black: 75.8, white: 80.9, metal: 86.4 },
+            { min: 3, black: 69.9, white: 77.0, metal: 84.8 },
+            { min: 4, black: 64.7, white: 73.5, metal: 83.3 },
+            { min: 5, black: 60.1, white: 70.3, metal: 81.9 },
+            { min: 6, black: 56.0, white: 67.4, metal: 80.6 },
+            { min: 7, black: 52.3, white: 64.8, metal: 79.4 },
+            { min: 8, black: 49.1, white: 62.4, metal: 78.3 },
+            { min: 9, black: 46.2, white: 60.3, metal: 77.3 },
+            { min: 10, black: 43.6, white: 58.4, metal: 76.3 }
+        ];
+
+        let currentMinute = 0;
+        let isSimulating = false;
+        let chartInstance = null;
+        const maxMinutes = 10;
+        const simulationTimeMs = 4000; // 4 ثواني لكل دقيقة
+
+        // تهيئة الجدول والبيانات عند الصفر
+        function initializeApp() {
+            renderInitialRow();
+            initChart();
+        }
+
+        function renderInitialRow() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            appendRow(experimentData[0]);
+        }
+
+        function appendRow(data, animate = false) {
+            const tbody = document.getElementById('tableBody');
+            const row = document.createElement('tr');
+            if(animate) row.classList.add('highlight-row');
+            
+            row.innerHTML = `
+                <td class="p-3 font-bold text-slate-700">${data.min}</td>
+                <td class="p-3 text-gray-900 font-medium">${data.black.toFixed(1)}</td>
+                <td class="p-3 text-gray-500 font-medium">${data.white.toFixed(1)}</td>
+                <td class="p-3 text-blue-500 font-medium">${data.metal.toFixed(1)}</td>
+            `;
+            tbody.appendChild(row);
+
+            // إزالة تأثير الإضاءة بعد فترة
+            if(animate) {
+                setTimeout(() => row.classList.remove('highlight-row'), 1000);
+            }
+            
+            // التمرير للأسفل إذا امتلأ الجدول
+            tbody.parentElement.parentElement.scrollTop = tbody.parentElement.parentElement.scrollHeight;
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('coolingChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [0],
+                    datasets: [
+                        {
+                            label: 'العلبة السوداء',
+                            data: [90],
+                            borderColor: '#111827',
+                            backgroundColor: '#111827',
+                            borderWidth: 3,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'العلبة البيضاء',
+                            data: [90],
+                            borderColor: '#9ca3af',
+                            backgroundColor: '#9ca3af',
+                            borderWidth: 3,
+                            borderDash: [5, 5],
+                            tension: 0.3
+                        },
+                        {
+                            label: 'العلبة الفضية',
+                            data: [90],
+                            borderColor: '#3b82f6',
+                            backgroundColor: '#3b82f6',
+                            borderWidth: 3,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 30,
+                            max: 100,
+                            title: { display: true, text: 'درجة الحرارة (°C)', font: { family: 'Tajawal', size: 14 } }
+                        },
+                        x: {
+                            title: { display: true, text: 'الزمن (دقائق)', font: { family: 'Tajawal', size: 14 } }
+                        }
+                    },
+                    plugins: {
+                        legend: { labels: { font: { family: 'Tajawal', size: 13 } } }
+                    }
+                }
+            });
+        }
+
+        function updateChart(data) {
+            chartInstance.data.labels.push(data.min);
+            chartInstance.data.datasets[0].data.push(data.black);
+            chartInstance.data.datasets[1].data.push(data.white);
+            chartInstance.data.datasets[2].data.push(data.metal);
+            chartInstance.update();
+        }
+
+        function formatTime(min, sec) {
+            return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+        }
+
+        function simulateNextMinute() {
+            if (isSimulating || currentMinute >= maxMinutes) return;
+            
+            isSimulating = true;
+            const btn = document.getElementById('simBtn');
+            const timerDisplay = document.getElementById('timerDisplay');
+            
+            btn.disabled = true;
+            btn.classList.replace('bg-blue-600', 'bg-slate-400');
+            btn.innerHTML = `<span>⏳</span> جاري المحاكاة...`;
+            timerDisplay.classList.add('timer-active');
+
+            const startMinute = currentMinute;
+            const targetMinute = currentMinute + 1;
+            const startTime = Date.now();
+
+            function updateTimer() {
+                const elapsed = Date.now() - startTime;
+                let progress = elapsed / simulationTimeMs;
+                
+                if (progress >= 1) progress = 1;
+
+                // حساب الثواني المعروضة (من 0 إلى 60 في الـ 4 ثواني)
+                const displaySeconds = Math.floor(progress * 60);
+                
+                // تحديث نص المؤقت. إذا لم نصل للنهاية نعرض دقيقة البداية + الثواني
+                if (progress < 1) {
+                    timerDisplay.innerText = formatTime(startMinute, displaySeconds);
+                    requestAnimationFrame(updateTimer);
+                } else {
+                    // اكتمال الدقيقة
+                    timerDisplay.innerText = formatTime(targetMinute, 0);
+                    finishSimulationStep(targetMinute);
+                }
+            }
+
+            requestAnimationFrame(updateTimer);
+        }
+
+        function finishSimulationStep(newMinute) {
+            currentMinute = newMinute;
+            const newData = experimentData[currentMinute];
+            
+            // تحديث الواجهة والبيانات
+            appendRow(newData, true);
+            updateChart(newData);
+
+            const btn = document.getElementById('simBtn');
+            const timerDisplay = document.getElementById('timerDisplay');
+            
+            isSimulating = false;
+            btn.disabled = false;
+            btn.classList.replace('bg-slate-400', 'bg-blue-600');
+            timerDisplay.classList.remove('timer-active');
+
+            if (currentMinute < maxMinutes) {
+                document.getElementById('simBtnText').innerText = `بدء محاكاة الدقيقة ${currentMinute + 1}`;
+                btn.innerHTML = `<span>▶️</span> <span id="simBtnText">بدء محاكاة الدقيقة ${currentMinute + 1}</span>`;
+            } else {
+                btn.disabled = true;
+                btn.classList.replace('bg-blue-600', 'bg-green-600');
+                btn.innerHTML = `<span>✅</span> اكتملت التجربة`;
+            }
+        }
+
+        function resetSimulation() {
+            if(isSimulating) return; // منع الإلغاء أثناء عمل العداد
+            
+            currentMinute = 0;
+            document.getElementById('timerDisplay').innerText = "00:00";
+            
+            const btn = document.getElementById('simBtn');
+            btn.disabled = false;
+            btn.classList.remove('bg-slate-400', 'bg-green-600');
+            btn.classList.add('bg-blue-600');
+            btn.innerHTML = `<span>▶️</span> <span id="simBtnText">بدء محاكاة الدقيقة 1</span>`;
+            
+            initializeApp();
+        }
+
+        // تشغيل التهيئة عند تحميل الصفحة
+        window.onload = initializeApp;
+    </script>
+</body>
+</html>
